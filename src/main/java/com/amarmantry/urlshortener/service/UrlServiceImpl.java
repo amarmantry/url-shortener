@@ -1,10 +1,14 @@
 package com.amarmantry.urlshortener.service;
 
+import com.amarmantry.urlshortener.exception.UrlExpiredException;
+import com.amarmantry.urlshortener.exception.UrlNotFoundException;
 import com.amarmantry.urlshortener.model.Url;
 import com.amarmantry.urlshortener.repository.UrlRepository;
 import com.amarmantry.urlshortener.util.Base62Encoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 
 @Service
@@ -29,7 +33,10 @@ public class UrlServiceImpl implements UrlService {
     @Override
     public String getOriginalUrl(String shortCode) {
         Url url = urlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new RuntimeException("Url not found for shortCode " + shortCode));
+                .orElseThrow(() -> new UrlNotFoundException("Url not found for shortCode : " + shortCode));
+        if(url.getExpiresAt()!=null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new UrlExpiredException("Url has expired");
+        }
         url.setClickCount(url.getClickCount() + 1);
         urlRepository.save(url);
         return url.getLongUrl();

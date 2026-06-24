@@ -26,7 +26,7 @@ public class UrlController {
                 .status(HttpStatus.CREATED)
                 .body(urlMapper.toResponseDto(saved, baseUrl));
     }
-    @GetMapping("{shortcode}")
+    @GetMapping("/{shortcode}")
     public ResponseEntity<Void> redirect(@PathVariable String shortcode) {
         String longUrl = urlService.getOriginalUrl(shortcode);
         return ResponseEntity
