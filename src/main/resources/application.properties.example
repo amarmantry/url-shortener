@@ -12,5 +12,7 @@ spring.jpa.properties.hibernate.format_sql=true
 spring.jpa.open-in-view=false
 
 server.port=8080
+jwt.secret=secret-key-that-is-at-least-32-characters-long
+jwt.expiration=86400
 
 spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
