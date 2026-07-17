@@ -51,7 +51,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/urls/{code}").permitAll()
+                        .requestMatchers("/{shortcode}").permitAll()
                         .anyRequest().authenticated()
                 )
 
