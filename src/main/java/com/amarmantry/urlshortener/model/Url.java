@@ -32,4 +32,7 @@ public class Url {
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 }
