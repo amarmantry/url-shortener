@@ -16,3 +16,5 @@ jwt.secret=secret-key-that-is-at-least-32-characters-long
 jwt.expiration=86400
 
 spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+app.base-url=http://localhost:8080

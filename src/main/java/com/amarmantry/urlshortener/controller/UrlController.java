@@ -7,6 +7,7 @@ import com.amarmantry.urlshortener.model.Url;
 import com.amarmantry.urlshortener.service.UrlService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,9 +21,10 @@ import java.util.List;
 public class UrlController {
     private final UrlService urlService;
     private final UrlMapper urlMapper;
+    @Value("${app.base-url}")
+    private String baseUrl;
     @PostMapping("/api/shorten")
     public ResponseEntity<UrlResponseDto> saveUrl(@Valid @RequestBody UrlRequestDto url, Authentication authentication) {
-        final String baseUrl = "http://localhost:8080";
         Url saved = urlService.shortenUrl(url.getLongUrl(),authentication.getName(),url.getExpiresAt());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -38,7 +40,6 @@ public class UrlController {
     }
     @GetMapping("/urls/mine")
     public ResponseEntity<List<UrlResponseDto>> mineUrls(Authentication authentication) {
-        final String baseUrl = "http://localhost:8080";
         List<Url> urls = urlService.getAllUrls(authentication.getName());
         List<UrlResponseDto> response = urls.stream()
                         .map(url -> urlMapper.toResponseDto(url, baseUrl))
