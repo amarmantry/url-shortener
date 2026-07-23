@@ -27,6 +27,9 @@ public class UrlServiceImpl implements UrlService {
         User owner = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found : " + username));
         LocalDateTime expiresAt = (requestedExpiry != null) ? requestedExpiry : LocalDateTime.now().plusDays(DEFAULT_EXPIRY_DAYS);
+        if(expiresAt.isBefore(LocalDateTime.now())){
+            throw new IllegalArgumentException("Invalid time entered : " + expiresAt);
+        }
         Url url = Url.builder()
                 .longUrl(LongUrl)
                 .shortCode("")
