@@ -23,7 +23,7 @@ public class UrlController {
     @PostMapping("/api/shorten")
     public ResponseEntity<UrlResponseDto> saveUrl(@Valid @RequestBody UrlRequestDto url, Authentication authentication) {
         final String baseUrl = "http://localhost:8080";
-        Url saved = urlService.shortenUrl(url.getLongUrl(),authentication.getName());
+        Url saved = urlService.shortenUrl(url.getLongUrl(),authentication.getName(),url.getExpiresAt());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(urlMapper.toResponseDto(saved, baseUrl));

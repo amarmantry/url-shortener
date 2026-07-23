@@ -24,7 +24,7 @@ public class Url {
     private String shortCode;
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    @Column
+    @Column(nullable = false)
     private LocalDateTime expiresAt;
     @Column(nullable = false)
     private Long clickCount = 0L;
