@@ -3,6 +3,8 @@ package com.amarmantry.urlshortener.exception;
 import com.amarmantry.urlshortener.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -57,6 +59,28 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder()
                         .status(500)
                         .message("Something went wrong")
+                        .timeStamp(LocalDateTime.now())
+                        .build());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex){
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.builder()
+                        .status(400)
+                        .message(ex.getMessage())
+                        .timeStamp(LocalDateTime.now())
+                        .build());
+    }
+
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleAuthFailure(RuntimeException ex){
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.builder()
+                        .status(401)
+                        .message("Invalid username or password")
                         .timeStamp(LocalDateTime.now())
                         .build());
     }
