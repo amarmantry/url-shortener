@@ -10,6 +10,7 @@ import com.amarmantry.urlshortener.util.Base62Encoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,7 +57,38 @@ public class UrlServiceImpl implements UrlService {
     }
 
     @Override
-    public List<Url> getAllUrls(String username) {
+    public List<Url> getAllUrlsByOwner(String username) {
        return urlRepository.findAllByOwnerUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public Url updateUrl(String longUrl, String shortCode, LocalDateTime requestedExpiry, String username) {
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new UrlNotFoundException("Url not found for code : " + shortCode));
+        if(!url.getOwner().getUsername().equals(username)) {
+            throw new UrlNotFoundException("Url not found for code : " + shortCode);
+        }
+        if(longUrl!=null){
+            url.setLongUrl(longUrl);
+        }
+        if(requestedExpiry!=null) {
+            if(requestedExpiry.isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("Invalid time entered : " + requestedExpiry);
+            }
+            url.setExpiresAt(requestedExpiry);
+        }
+        return urlRepository.save(url);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUrl(String shortCode, String username) {
+        Url url=urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new UrlNotFoundException("URL not found for shortcode : " + shortCode));
+        if(!url.getOwner().getUsername().equals(username)) {
+            throw new UrlNotFoundException("Url not found for code : " + shortCode);
+        }
+        urlRepository.delete(url);
     }
 }
