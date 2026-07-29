@@ -10,5 +10,7 @@ import java.util.List;
 public interface UrlService {
     Url shortenUrl(String Longurl, String username, LocalDateTime requestedExpiry);
     String  getOriginalUrl(String shortCode);
-    List<Url> getAllUrls(String username);
+    List<Url> getAllUrlsByOwner(String username);
+    Url updateUrl(String longUrl, String shortCode, LocalDateTime requestedExpiry, String username);
+    void deleteUrl(String shortCode, String username);
 }
