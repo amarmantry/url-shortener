@@ -8,10 +8,12 @@ import com.amarmantry.urlshortener.repository.UrlRepository;
 import com.amarmantry.urlshortener.repository.UserRepository;
 import com.amarmantry.urlshortener.util.Base62Encoder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,6 +25,10 @@ public class UrlServiceImpl implements UrlService {
     private final UrlRepository urlRepository;
     private final UserRepository userRepository;
     private static final long DEFAULT_EXPIRY_DAYS = 30;
+    private final StringRedisTemplate redisTemplate;
+    private static final String KEY_PREFIX="url:";
+    private static final Duration MAX_CACHE_TTL = Duration.ofMinutes(30);
+
     @Override
     public Url shortenUrl(String LongUrl, String username, LocalDateTime requestedExpiry) {
         User owner = userRepository.findByUsername(username)
@@ -45,20 +51,48 @@ public class UrlServiceImpl implements UrlService {
     }
 
     @Override
-    public String getOriginalUrl(String shortCode) {
-        Url url = urlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new UrlNotFoundException("Url not found for shortCode : " + shortCode));
-        if(url.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new UrlExpiredException("Url has expired");
-        }
-        url.setClickCount(url.getClickCount() + 1);
-        urlRepository.save(url);
-        return url.getLongUrl();
+    public List<Url> getAllUrlsByOwner(String username) {
+       return urlRepository.findAllByOwnerUsername(username);
     }
 
     @Override
-    public List<Url> getAllUrlsByOwner(String username) {
-       return urlRepository.findAllByOwnerUsername(username);
+    public String getOriginalUrl(String shortCode) {
+        try {
+            String key = KEY_PREFIX + shortCode;
+            String cachedLongUrl = redisTemplate.opsForValue().get(key);
+
+            if (cachedLongUrl != null) {
+                urlRepository.incrementClickCount(shortCode);
+                return cachedLongUrl;
+            }
+
+            Url url = urlRepository.findByShortCode(shortCode)
+                    .orElseThrow(() ->
+                            new UrlNotFoundException(
+                                    "Url not found for shortCode : " + shortCode));
+
+            if (url.getExpiresAt().isBefore(LocalDateTime.now())) {
+                System.out.println("8. URL expired");
+                throw new UrlExpiredException("Url has expired");
+            }
+
+            Duration untilExpiry =
+                    Duration.between(LocalDateTime.now(), url.getExpiresAt());
+
+            Duration ttl =
+                    untilExpiry.compareTo(MAX_CACHE_TTL) < 0
+                            ? untilExpiry
+                            : MAX_CACHE_TTL;
+
+            redisTemplate.opsForValue()
+                    .set(key, url.getLongUrl(), ttl);
+            urlRepository.incrementClickCount(shortCode);
+            return url.getLongUrl();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override
@@ -78,6 +112,7 @@ public class UrlServiceImpl implements UrlService {
             }
             url.setExpiresAt(requestedExpiry);
         }
+        redisTemplate.delete(KEY_PREFIX + shortCode);
         return urlRepository.save(url);
     }
 
@@ -89,6 +124,7 @@ public class UrlServiceImpl implements UrlService {
         if(!url.getOwner().getUsername().equals(username)) {
             throw new UrlNotFoundException("Url not found for code : " + shortCode);
         }
+        redisTemplate.delete(KEY_PREFIX + shortCode);
         urlRepository.delete(url);
     }
 }
